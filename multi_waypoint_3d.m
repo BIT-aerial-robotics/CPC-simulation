@@ -5,15 +5,15 @@ close all;
 %% optimization problem instances and optimization variables
 opti = casadi.Opti();
 waypoints = [5 40 60];
-waypoints = [0 20 100];
+waypoints = [[0;0;0], [1;1;1], [0; 20; 100]];  %each column is a point 
 start_point = 0 ;
 end_point = 100;
 M=size(waypoints,2);
-N =200;
+N =50;
 tN=opti.variable(1);
 dt=tN/N;
-u = opti.variable(N,1);
-x = opti.variable(N+1,2);
+u = opti.variable(N,3);
+x = opti.variable(N+1,2*3);
 mu = opti.variable(N+1,M);%=N+1 �жϿ���Ĺ�ʽ�ü���?
 v = opti.variable(N+1,M);
 lamda = opti.variable(N+1,M);
@@ -78,7 +78,7 @@ for i =1:N
     end
 end
 
-%��ʽ14��Ӧ��Լ��
+%equation 14
 % for j =1:N  
 %   opti.subject_to(mu(j)*((x(j)-10)*(x(j)-10)-v(j))==0);
 % end
@@ -116,7 +116,7 @@ opti.solver('ipopt',struct('print_time',false),  struct('max_iter',80000));
 % opti.solver('ipopt',struct('print_time',false) ); 
 sol = opti.solve(); 
 
-%% ����
+%% plot
 tN2=sol.value(tN);
 fprintf('the value of tN is%6.2f\n',tN2)
 
@@ -127,7 +127,7 @@ subplot(2,3,1);
 hold on
 plot(t,sol.value(u),'-o');
 legend('u');
-title('���ٶ�');
+title('input');
 
 
 m2=tN2/(N);
@@ -140,14 +140,14 @@ plot(t,sol.value(mu(:,2)),'-d');
 hold on;
 plot(t,sol.value(mu(:,3)),'-d');
 legend('mu1','mu2','mu3');
-title('һֱ����0��ż�����?');
+title('Always equal to 0, occasionally equal to 1.');
 
 subplot(2,3,3);
 mid=sol.value(x(:,1));
 mid=mid';
 plot(t,mid,'-o');
 legend('x1');
-title(['λ����',num2str(waypoints)]);
+title(['Waypoint',num2str(waypoints)]);
 
 
 subplot(2,3,4);
@@ -157,7 +157,7 @@ plot(t,sol.value(lamda(:,2)),':*');
 hold on;
 plot(t,sol.value(lamda(:,3)),':*');
 legend('lamda1','lamda2','lamda3');
-title('��ȫ��1���ȫ��?');
+title('Transitioning from all 1s to all 0s.');
 
 subplot(2,3,5);
 % plot(t,sol.value(v),'-kX');
@@ -167,9 +167,9 @@ plot(t,sol.value(v(:,2)),'-kX');
 hold on;
 plot(t,sol.value(v(:,3)),'-kX');
 legend('v');
-title('Ӧ��һֱͦС��');
+title('small positive numbers');
 
 subplot(2,3,6);
 plot(t,sol.value(x(:,2)),'-rX');
 legend('x2');
-title('�ٶ�');
+title('x_2, velocity');

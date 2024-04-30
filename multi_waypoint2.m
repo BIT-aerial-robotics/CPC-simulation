@@ -6,10 +6,13 @@ close all;
 opti = casadi.Opti();
 waypoints = [5 40 60];
 waypoints = [0 2 10];
-start_point = 0 ;
-end_point = 10;
+start_point = -1 ;
+end_point = 11;
 M=size(waypoints,2);
-N =122;
+N =70;
+N =20;
+N =30;
+N =30;
 tN=opti.variable(1);
 dt=tN/N;
 u = opti.variable(N,1);
@@ -21,13 +24,13 @@ lamda = opti.variable(N+1,M);
 opti.minimize(tN);
 %% initialization
 
-opti.set_initial(tN, 0);% tN��ʼ��Ϊ0/2���Խ��������ʼ����?��5�ⲻ����
+opti.set_initial(tN, 2);% tN��ʼ��Ϊ0/2���Խ��������ʼ����?��5�ⲻ����
 
 x_ini = 0.5*ones(N+1,2);
 x_ini(:,2) = 0.5*zeros(N+1,1);
 % x_ini(:,1)=[0:1:N];
 
-x_ini(:,1)= waypoints(1):(waypoints(end)-waypoints(1))/N:waypoints(end);
+x_ini(:,1)= start_point:(waypoints(end)-start_point)/N:waypoints(end);
 
 opti.set_initial(x, x_ini); 
 % opti.set_initial(x, 0); %���ȫ��ʼ����?���������ǧ��?opti.set_initial(mu, 0);
@@ -91,23 +94,23 @@ end
 %   opti.subject_to(lamda(j)>=0); 
 % end
 
-% d = opti.parameter();
+d = opti.parameter();
 % for j =1:N  
 %   opti.subject_to(0 <= v(j) <= d);
 % end
 
-opti.subject_to(0 <= v <= 0.5);
-% opti.set_value(d,0.4);
+opti.subject_to(0 <= v <= 0.7);
+% opti.set_value(d,0.7);
 
 
-%   opti.subject_to([x(1,1);x(1,2)] == [start_point;0]);
+  opti.subject_to([x(1,1);x(1,2)] == [start_point;0]);
 % opti.subject_to(x(1,1)==waypoints(1)); 
 % opti.subject_to(x(1,2)==0); 
-%  opti.subject_to([x(N+1,1);x(N+1,2)] == [end_point;0]);
+ opti.subject_to([x(N+1,1);x(N+1,2)] == [end_point;0]);
 % opti.subject_to(x(N,1)==waypoints(end)); 
 % opti.subject_to(x(N,2)==0); 
 opti.subject_to([lamda(1,:);lamda(N+1,:)] == [1*ones(1,M);zeros(1,M)]);
-% opti.subject_to(0 <= tN); 
+opti.subject_to(0 <= tN <=10 ); %constrain tN sometimes is helpful for convergence
 
 % opts["ipopt.tol"] = 1e-4;
 % opti.solver('ipopt',struct('print_time',false),struct('max_iter',20000),struct('tol', 1e-4)); 
