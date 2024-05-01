@@ -13,18 +13,20 @@ N =70;
 N =20;
 N =30;
 N =30;
+%%
+
 tN=opti.variable(1);
 dt=tN/N;
 u = opti.variable(N,1);
 x = opti.variable(N+1,2);
-mu = opti.variable(N+1,M);%=N+1 �жϿ���Ĺ�ʽ�ü���?
-v = opti.variable(N+1,M);
+mu = opti.variable(N,M);%=N+1 �жϿ���Ĺ�ʽ�ü���?
+v = opti.variable(N,M);
 lamda = opti.variable(N+1,M);
 %% cost function
 opti.minimize(tN);
 %% initialization
 
-opti.set_initial(tN, 2);% tN��ʼ��Ϊ0/2���Խ��������ʼ����?��5�ⲻ����
+opti.set_initial(tN, 2);% tN��ʼ��Ϊ0/2���Խ��������ʼ����?��5�ⲻ����
 
 x_ini = 0.5*ones(N+1,2);
 x_ini(:,2) = 0.5*zeros(N+1,1);
@@ -33,7 +35,7 @@ x_ini(:,2) = 0.5*zeros(N+1,1);
 x_ini(:,1)= start_point:(waypoints(end)-start_point)/N:waypoints(end);
 
 opti.set_initial(x, x_ini); 
-% opti.set_initial(x, 0); %���ȫ��ʼ����?���������ǧ��?opti.set_initial(mu, 0);
+% opti.set_initial(x, 0); %���ȫ��ʼ����?���������ǧ��?opti.set_initial(mu, 0);
 opti.set_initial(u, 0);
 % 
 lamda_ini =  ones(N+1,M);
@@ -71,11 +73,11 @@ for j =1:N
   opti.subject_to(-5 <= u(j) <= 5);
 end
 opti.subject_to( u(1) == 0);
-%��ʽ13���һ�е�һ��ʽ�Ӷ�Ӧ��Լ��?% ���׼ȷ��Ӧ�øĳ�?/1
+%��ʽ13���һ�е�һ��ʽ�Ӷ�Ӧ��Լ��?% ���׼ȷ��Ӧ�øĳ�?/1
 % for j =1:N  
 %   opti.subject_to(0<=mu(j));
 % end
-for i =1:N  
+for i =1:N
     for j =1:M  
         opti.subject_to(0<=mu(i,j));
     end
@@ -85,7 +87,7 @@ end
 % for j =1:N  
 %   opti.subject_to(mu(j)*((x(j)-10)*(x(j)-10)-v(j))==0);
 % end
-for i =1:N+1  %��2��ʼ����1��ʼ��
+for i =1:N  %��2��ʼ����1��ʼ��
     for j =1:M  
         opti.subject_to(mu(i,j)*((x(i,1)-waypoints(j))*(x(i,1)-waypoints(j))-v(i,j))==0);
     end
@@ -137,11 +139,11 @@ m2=tN2/(N);
 t = 0: m2:tN2;
 
 subplot(2,3,2);
-plot(t,sol.value(mu(:,1)),'-d');
+plot(t(1:end-1),sol.value(mu(:,1)),'-d');
 hold on;
-plot(t,sol.value(mu(:,2)),'-d');
+plot(t(1:end-1),sol.value(mu(:,2)),'-d');
 hold on;
-plot(t,sol.value(mu(:,3)),'-d');
+plot(t(1:end-1),sol.value(mu(:,3)),'-d');
 legend('mu1','mu2','mu3');
 title('Always equal to 0, occasionally equal to 1.');
 
@@ -164,11 +166,11 @@ title('Transitioning from all 1s to all 0s.');
 
 subplot(2,3,5);
 % plot(t,sol.value(v),'-kX');
-plot(t,sol.value(v(:,1)),'-kX');
+plot(t(1:end-1),sol.value(v(:,1)),'-kX');
 hold on;
-plot(t,sol.value(v(:,2)),'-kX');
+plot(t(1:end-1),sol.value(v(:,2)),'-kX');
 hold on;
-plot(t,sol.value(v(:,3)),'-kX');
+plot(t(1:end-1),sol.value(v(:,3)),'-kX');
 legend('v');
 title('small positive numbers');
 
