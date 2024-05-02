@@ -23,22 +23,22 @@ N =20;
 N =30;
 N =40;
 N =50;
-N =55;
-N =90;
+% N =55;
+% N =90;
 %%
 
 tN=opti.variable(1);
 dt=tN/N;
 u = opti.variable(N,1);
 x = opti.variable(N+1,2);
-mu = opti.variable(N,M);%=N+1 �жϿ���Ĺ�ʽ�ü���?
+mu = opti.variable(N,M);%=N+1 �жϿ���Ĺ�ʽ�ü���?
 v = opti.variable(N,M);
 lamda = opti.variable(N+1,M);
 %% cost function
 opti.minimize(tN);
 %% initialization
 
-opti.set_initial(tN, 0);% tN��ʼ��Ϊ0/2���Խ��������ʼ����?��5�ⲻ����
+opti.set_initial(tN, 0);% tN��ʼ��Ϊ0/2���Խ��������ʼ����?��5�ⲻ����
 
 x_ini = 0.5*ones(N+1,2);
 x_ini(:,2) = 0.5*zeros(N+1,1);
@@ -47,7 +47,7 @@ x_ini(:,2) = 0.5*zeros(N+1,1);
 x_ini(:,1)= start_point:(waypoints(end)-start_point)/N:waypoints(end);
 
 opti.set_initial(x, x_ini); 
-% opti.set_initial(x, 0); %���ȫ��ʼ����?���������ǧ��?
+% opti.set_initial(x, 0); %���ȫ��ʼ����?���������ǧ��?
 opti.set_initial(mu, 0);
 opti.set_initial(u, 0);
 % 
@@ -86,7 +86,7 @@ for j =1:N
   opti.subject_to(-5 <= u(j) <= 5);
 end
 opti.subject_to( u(1) == 0);
-%��ʽ13���һ�е�һ��ʽ�Ӷ�Ӧ��Լ��?% ���׼ȷ��Ӧ�øĳ�?/1
+%��ʽ13���һ�е�һ��ʽ�Ӷ�Ӧ��Լ��?% ���׼ȷ��Ӧ�øĳ�?/1
 % for j =1:N  
 %   opti.subject_to(0<=mu(j));
 % end
@@ -121,9 +121,9 @@ opti.subject_to(0 <= v <= 0.9);
   opti.subject_to([x(1,1);x(1,2)] == [start_point;0]);
 % opti.subject_to(x(1,1)==waypoints(1)); 
 % opti.subject_to(x(1,2)==0); 
-%  opti.subject_to([x(N+1,1);x(N+1,2)] == [end_point;0]);
+ opti.subject_to([x(N+1,1);x(N+1,2)] == [end_point;0]);
 % opti.subject_to(x(N,1)==waypoints(end)); 
-opti.subject_to(x(N+1,2)==0); 
+% opti.subject_to(x(N+1,2)==0); 
 opti.subject_to([lamda(1,:);lamda(N+1,:)] == [1*ones(1,M);zeros(1,M)]);
 opti.subject_to(0 <= tN <= 100 ); %constrain tN sometimes is helpful for convergence
 

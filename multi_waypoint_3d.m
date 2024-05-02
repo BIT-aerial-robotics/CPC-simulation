@@ -6,6 +6,8 @@ close all;
 opti = casadi.Opti();
 
 waypoints = [ [1;1;2],[2;3;2]];  %each column is a point 
+waypoints = [ [1;1;2],[2;3;2], [2;3;3] ];  %each column is a point 
+
 start_point = [0;0;0];
 end_point = [1; 2; 3];
 M=size(waypoints,2);
@@ -97,11 +99,12 @@ end
 % end
 
 d = opti.parameter();
-% for j =1:N  
-%   opti.subject_to(0 <= v(j) <= d);
-% end
-
-opti.subject_to(0 <= v <= d);
+for i =1:N  
+    for j =1:M  
+        opti.subject_to(0 <= v(i,j) <= d);
+    end
+end
+% opti.subject_to(0 <= v <= d);
 opti.set_value(d,0.4^2);
 
 
@@ -112,7 +115,7 @@ opti.set_value(d,0.4^2);
 % opti.subject_to(x(N+1,4:6)== [0,0,0]); 
 % opti.subject_to(x(N,2)==0); 
 opti.subject_to([lamda(1,:);lamda(N+1,:)] == [1*ones(1,M);zeros(1,M)]);
-opti.subject_to(0 <= tN); 
+opti.subject_to(0 <= tN ); 
 
 % opts["ipopt.tol"] = 1e-4;
 % opti.solver('ipopt',struct('print_time',false),struct('max_iter',20000),struct('tol', 1e-4)); 

@@ -9,11 +9,11 @@ def runge_kutta(y, t, u, dt, f):
         dx is the time step in x
         f is derivative of function y(t)
     """
-    k1 = dt * f(y, u, t)
-    k2 = dt * f(y + 0.5 * k1, u, t + 0.5 * dt)
-    k3 = dt * f(y + 0.5 * k2, u, t + 0.5 * dt)
-    k4 = dt * f(y + k3, u, t + dt)
-    return y + (k1 + 2 * k2 + 2 * k3 + k4) / 6.
+    k1 =   f(y, u, t)
+    k2 =  f(y + 0.5 *dt* k1, u, t + 0.5 * dt)
+    k3 =  f(y + 0.5 *dt* k2, u, t + 0.5 * dt)
+    k4 =  f(y + dt*k3, u, t + dt)
+    return y + (k1 + 2 * k2 + 2 * k3 + k4) *dt / 6.
 
 opti = ca.Opti()
 
@@ -41,28 +41,38 @@ N = 100
 waypoints = [0, 2, 10]
 start_point = -1
 end_point = 11
-N = 40
+N = 200
+
+waypoints = [0, 20, 100]
+start_point = -10
+end_point = 130
+N = 200
+
 
 M = len(waypoints)
 
-tN = opti.variable()
+tN = opti.variable(1)
 u = opti.variable(N)
 x = opti.variable(N+1, 2)
 mu = opti.variable(N, M)
 v = opti.variable(N, M)
 lamda = opti.variable(N+1, M)
 
-opti.minimize(tN)
+x_ini = 0
+opti.set_initial(x, x_ini)
+
+
 dt=tN/N
 
 opti.subject_to(tN >= 0)
-opti.subject_to(tN <= 20)
+#opti.subject_to(tN <= 100)
 
 opti.subject_to(u >= -5)
 opti.subject_to(u <= 5)
-opti.subject_to(u[0] == 0)
+#opti.subject_to(u[0] == 0)
 opti.subject_to(x[0, :] == ca.horzcat(start_point, 0))
 opti.subject_to(x[N, :] == ca.horzcat(end_point,0))
+#opti.subject_to(x[N, 1] == 0)
 opti.subject_to(lamda[0, :] == 1)
 opti.subject_to(lamda[N, :] == 0)
 
@@ -104,11 +114,13 @@ for i in range(N):
 for i in range(N):
     for j in range(M):
         opti.subject_to(mu[i,j]>= 0)
+        #opti.subject_to(mu[i,j]<= 1)
         opti.subject_to(v[i,j] >= 0)
-        opti.subject_to(v[i,j]<= 0.6)
+        opti.subject_to(v[i,j]<= 0.9)
 
+opti.minimize(tN)
 opts = {"expand":True, "ipopt.max_iter":200000000}
-#opts = {"ipopt.max_iter":200000000}
+opts = {"ipopt.max_iter":200000000}
 opts = {"ipopt.tol":1e-40, "expand":True, "ipopt.max_iter":200000000}
 opti.solver('ipopt', opts)
 #opti.solver('ipopt', {'print_time': False}, {'max_iter': 100000})
