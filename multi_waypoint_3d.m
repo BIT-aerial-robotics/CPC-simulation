@@ -4,33 +4,36 @@ close all;
 % prac
 %% optimization problem instances and optimization variables
 opti = casadi.Opti();
-waypoints = [5 40 60];
-waypoints = [[0;0;0], [1;1;1], [0; 20; 100]];  %each column is a point 
-start_point = 0 ;
-end_point = 100;
+
+waypoints = [ [1;1;2],[2;3;2]];  %each column is a point 
+start_point = [0;0;0];
+end_point = [1; 2; 3];
 M=size(waypoints,2);
-N =50;
+N =100;
 tN=opti.variable(1);
 dt=tN/N;
 u = opti.variable(N,3);
 x = opti.variable(N+1,2*3);
-mu = opti.variable(N+1,M);%=N+1 �жϿ���Ĺ�ʽ�ü���?
-v = opti.variable(N+1,M);
+mu = opti.variable(N,M); 
+v = opti.variable(N,M);
 lamda = opti.variable(N+1,M);
 %% cost function
 opti.minimize(tN);
 %% initialization
+opti.set_initial(tN, 0);  
 
-opti.set_initial(tN, 0);% tN��ʼ��Ϊ0/2���Խ��������ʼ����?��5�ⲻ����
+x_ini = 0.5*ones(N+1,2*3);
+x_ini(:,4:6) = 0.5*zeros(N+1,3); 
 
-x_ini = 0.5*ones(N+1,2);
-x_ini(:,2) = 0.5*zeros(N+1,1);
-% x_ini(:,1)=[0:1:N];
-
-x_ini(:,1)= waypoints(1):(waypoints(end)-waypoints(1))/N:waypoints(end);
+x_ini_col = zeros(3,N+1);
+for aa= 1:3
+ x_ini_col(aa,:) = start_point(aa):(end_point(aa)-start_point(aa))/N:end_point(aa);
+end
+x_ini(:,1:3) = x_ini_col';
 
 opti.set_initial(x, x_ini); 
-% opti.set_initial(x, 0); %���ȫ��ʼ����?���������ǧ��?opti.set_initial(mu, 0);
+% opti.set_initial(x, 0); 
+opti.set_initial(mu, 0);
 opti.set_initial(u, 0);
 % 
 lamda_ini =  ones(N+1,M);
@@ -38,8 +41,8 @@ lamda_ini =  ones(N+1,M);
 lamda_ini(:,end)=0;
 opti.set_initial(lamda, lamda_ini);
 opti.set_initial(v, 0);
-%% ����G����constraints
-f = @(x,u) [x(2),u];
+%%constraints
+f = @(x,u) [x(4:6),u];
 for k=1:N % loop over control intervals
    % Runge-Kutta 4 integration
    k1 = f(x(k,:),         u(k,:));
@@ -64,27 +67,29 @@ end
 
 
 % input boundedness
-for j =1:N  
-  opti.subject_to(-5 <= u(j) <= 5);
-end
-opti.subject_to( u(1) == 0);
-%��ʽ13���һ�е�һ��ʽ�Ӷ�Ӧ��Լ��?% ���׼ȷ��Ӧ�øĳ�?/1
-% for j =1:N  
-%   opti.subject_to(0<=mu(j));
+% for i =1:N+1  
+%     for j =1:3
+%        opti.subject_to(-5 <= u(i,j) <= 5);
+%     end
 % end
+
+opti.subject_to(-5 <= u  <= 5);
+% opti.subject_to( u(1,:) == 0);
+
 for i =1:N  
     for j =1:M  
         opti.subject_to(0<=mu(i,j));
     end
 end
+% opti.subject_to(0<=mu );
 
 %equation 14
 % for j =1:N  
 %   opti.subject_to(mu(j)*((x(j)-10)*(x(j)-10)-v(j))==0);
 % end
-for i =1:N+1  %��2��ʼ����1��ʼ��
+for i =1:N   
     for j =1:M  
-        opti.subject_to(mu(i,j)*((x(i,1)-waypoints(j))*(x(i,1)-waypoints(j))-v(i,j))==0);
+        opti.subject_to(mu(i,j)*((x(i,1:3)-waypoints(:,j)')*(x(i,1:3)-waypoints(:,j)')'-v(i,j))==0);
     end
 end
 % for j =1:N  
@@ -97,14 +102,14 @@ d = opti.parameter();
 % end
 
 opti.subject_to(0 <= v <= d);
-opti.set_value(d,0.4);
+opti.set_value(d,0.4^2);
 
 
-  opti.subject_to([x(1,1);x(1,2)] == [start_point;0]);
+  opti.subject_to([x(1,1:3);x(1,4:6)] == [start_point';[0,0,0]]);
 % opti.subject_to(x(1,1)==waypoints(1)); 
 % opti.subject_to(x(1,2)==0); 
- opti.subject_to([x(N+1,1);x(N+1,2)] == [end_point;0]);
-% opti.subject_to(x(N,1)==waypoints(end)); 
+ opti.subject_to([x(N+1,1:3);x(N+1,4:6)] == [end_point';[0,0,0]]);
+% opti.subject_to(x(N+1,4:6)== [0,0,0]); 
 % opti.subject_to(x(N,2)==0); 
 opti.subject_to([lamda(1,:);lamda(N+1,:)] == [1*ones(1,M);zeros(1,M)]);
 opti.subject_to(0 <= tN); 
@@ -121,55 +126,85 @@ tN2=sol.value(tN);
 fprintf('the value of tN is%6.2f\n',tN2)
 
 m=tN2/(N-1);
-t = 0: m:tN2;
+t1 = 0: m:tN2;
+
+m2=tN2/(N);
+t2 = 0: m2:tN2;
 
 subplot(2,3,1);
 hold on
-plot(t,sol.value(u),'-o');
+plot(t1,sol.value(u),'-o');
 legend('u');
 title('input');
 
 
-m2=tN2/(N);
-t = 0: m2:tN2;
-
 subplot(2,3,2);
-plot(t,sol.value(mu(:,1)),'-d');
-hold on;
-plot(t,sol.value(mu(:,2)),'-d');
-hold on;
-plot(t,sol.value(mu(:,3)),'-d');
-legend('mu1','mu2','mu3');
-title('Always equal to 0, occasionally equal to 1.');
+for aa = 1:M
+    plot(t1,sol.value(mu(:,aa)),'-d');
+    hold on;    
+    legend(['mu',num2str(aa)]);
+end
+% legend('mu1','mu2','mu3');
+title('Always  0, occasionally 1.');
 
 subplot(2,3,3);
-mid=sol.value(x(:,1));
-mid=mid';
-plot(t,mid,'-o');
-legend('x1');
-title(['Waypoint',num2str(waypoints)]);
+for aa=1:3
+    mid=sol.value(x(:,aa));
+    mid=mid';
+    plot(t2,mid,'-o');
+    hold on;
+    legend(['x', num2str(aa)]);hold on;
+    title(['Waypoint',num2str(waypoints(aa,:))]);
+end
 
 
 subplot(2,3,4);
-plot(t,sol.value(lamda(:,1)),':*');
-hold on;
-plot(t,sol.value(lamda(:,2)),':*');
-hold on;
-plot(t,sol.value(lamda(:,3)),':*');
-legend('lamda1','lamda2','lamda3');
-title('Transitioning from all 1s to all 0s.');
+for aa = 1:M
+    plot(t2,sol.value(lamda(:,M)),':*');
+    hold on;
+    legend(['\lambda',num2str(aa)]);
+end
+% plot(t2,sol.value(lamda(:,2)),':*');
+% hold on;
+% plot(t2,sol.value(lamda(:,3)),':*');
+% legend('lamda1','lamda2','lamda3');
+title('From all 1s to all 0s.');
 
 subplot(2,3,5);
 % plot(t,sol.value(v),'-kX');
-plot(t,sol.value(v(:,1)),'-kX');
-hold on;
-plot(t,sol.value(v(:,2)),'-kX');
-hold on;
-plot(t,sol.value(v(:,3)),'-kX');
-legend('v');
+for aa = 1:M
+    plot(t1,sol.value(v(:,M)),'-kX');
+    hold on;
+	legend(['v',num2str(aa)]);
+% plot(t1,sol.value(v(:,2)),'-kX');
+% hold on;
+% plot(t1,sol.value(v(:,3)),'-kX');
+% legend('v');
+end
 title('small positive numbers');
 
 subplot(2,3,6);
-plot(t,sol.value(x(:,2)),'-rX');
-legend('x2');
-title('x_2, velocity');
+plot(t2,sol.value(x(:,4:6)),'-rX');
+legend('x(:,4,6)');
+title('velocity');
+
+
+for aa=1:3
+    figure();
+    mid=sol.value(x(:,aa));
+    mid=mid';
+    plot(t2,mid,'-o');
+    hold on;
+    legend(['x', num2str(aa)]);
+    title(['Waypoint',num2str(waypoints(aa,:))]);    
+    xlabel('time'); ylabel(['pos, ' num2str(aa)]);
+end
+
+figure();
+pos = sol.value(x(:,1:3));
+plot3(pos(:,1), pos(:,2), pos(:,3));
+hold on; 
+for bb=1:M
+    plot3(waypoints(1,bb), waypoints(2,bb), waypoints(3,bb),'*');
+end
+xlabel('x'); ylabel('y');zlabel('z');

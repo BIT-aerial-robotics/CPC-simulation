@@ -48,15 +48,15 @@ M = len(waypoints)
 tN = opti.variable()
 u = opti.variable(N)
 x = opti.variable(N+1, 2)
-mu = opti.variable(N+1, M)
-v = opti.variable(N+1, M)
+mu = opti.variable(N, M)
+v = opti.variable(N, M)
 lamda = opti.variable(N+1, M)
 
 opti.minimize(tN)
 dt=tN/N
 
 opti.subject_to(tN >= 0)
-opti.subject_to(tN <= 200)
+opti.subject_to(tN <= 20)
 
 opti.subject_to(u >= -5)
 opti.subject_to(u <= 5)
@@ -82,12 +82,12 @@ def func(y, u, t):
 #         # k4 = [x[k, 1] + dt * k3[0], u[k]]
 #         # #x_next = x[k, :] + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
           # x_next = x[k, :] + k1
-#          opti.subject_to(x[k+1, 1] == x[k, 1] + dt*u[k])
-#          opti.subject_to(x[k+1, 0] == x[k, 0] + dt*x[k+1, 1] )
+#         opti.subject_to(x[k+1, 1] == x[k, 1] + dt*u[k])
+#         opti.subject_to(x[k+1, 0] == x[k, 0] + dt*x[k+1, 1] )
 
 for k in range(N):
-    x_next = runge_kutta(ca.transpose(x[k, :]), 0, u[k], dt, func)
-    opti.subject_to(x[k+1, :] == ca.transpose(x_next))
+   x_next = runge_kutta(ca.transpose(x[k, :]), 0, u[k], dt, func)
+   opti.subject_to(x[k+1, :] == ca.transpose(x_next))
  
 
 for j in range(N):
@@ -97,16 +97,19 @@ for i in range(N+1):
     for j in range(M-1):
         opti.subject_to(lamda[i, j] - lamda[i, j+1] <= 0)
 
-for i in range(N+1):
+for i in range(N):
     for j in range(M):
         opti.subject_to(mu[i, j] * ((x[i, 0] - waypoints[j])**2 - v[i, j]) == 0)
+
+for i in range(N):
+    for j in range(M):
         opti.subject_to(mu[i,j]>= 0)
         opti.subject_to(v[i,j] >= 0)
-        opti.subject_to(v[i,j]<= 0.7)
+        opti.subject_to(v[i,j]<= 0.6)
 
 opts = {"expand":True, "ipopt.max_iter":200000000}
 #opts = {"ipopt.max_iter":200000000}
-
+opts = {"ipopt.tol":1e-40, "expand":True, "ipopt.max_iter":200000000}
 opti.solver('ipopt', opts)
 #opti.solver('ipopt', {'print_time': False}, {'max_iter': 100000})
 
@@ -121,13 +124,14 @@ plt.plot(t, sol.value(u), '-o')
 plt.legend('u')
 plt.title('Input')
 
-t = ca.linspace(0, tN2, N+1)
+ 
 plt.subplot(2, 3, 2)
 for i in range(M):
     plt.plot(t, sol.value(mu[:, i]), '-d')
 plt.legend(['mu1', 'mu2', 'mu3'])
 plt.title('Always equal to 0, occasionally equal to 1.')
 
+t = ca.linspace(0, tN2, N+1)
 plt.subplot(2, 3, 3)
 mid = sol.value(x[:, 0]).T
 plt.plot(t, mid, '-o')
@@ -140,12 +144,14 @@ for i in range(M):
 plt.legend(['lamda1', 'lamda2', 'lamda3'])
 plt.title('Transitioning from all 1s to all 0s.')
 
+t = ca.linspace(0, tN2, N)
 plt.subplot(2, 3, 5)
 for i in range(M):
     plt.plot(t, sol.value(v[:, i]), '-kX')
 plt.legend('v')
 plt.title('Small positive numbers')
 
+t = ca.linspace(0, tN2, N+1)
 plt.subplot(2, 3, 6)
 plt.plot(t, sol.value(x[:, 1]), '-rX')
 plt.legend('x2')
